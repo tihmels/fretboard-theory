@@ -41,6 +41,7 @@ export function ProgressionPanel() {
   const replaceAt  = useProgressionStore(s => s.replaceAt)
   const removeAt   = useProgressionStore(s => s.removeAt)
   const focusStep  = useProgressionStore(s => s.focusStep)
+  const hoverStep  = useProgressionStore(s => s.hoverStep)
   const stepBy     = useProgressionStore(s => s.stepBy)
   const clear      = useProgressionStore(s => s.clear)
   const toggle     = useProgressionStore(s => s.toggle)
@@ -237,6 +238,8 @@ export function ProgressionPanel() {
                   <div
                     key={idx}
                     onClick={() => handleStepClick(idx)}
+                    onMouseEnter={() => { if (chord) hoverStep(idx) }}
+                    onMouseLeave={() => hoverStep(null)}
                     title={tipLabel}
                     className={!isPlay && !isEdit ? 'h-card' : ''}
                     style={{

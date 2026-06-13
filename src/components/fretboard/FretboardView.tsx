@@ -10,9 +10,9 @@ export function FretboardView() {
   const annotations    = useFretboardAnnotations()
   const fretCount      = useFretboardStore(s => s.fretCount)
   const chordQualityId = useTheoryStore(s => s.chordQualityId)
-  const activeStep     = useProgressionStore(s => s.activeStep)
+  const hoveredStep    = useProgressionStore(s => s.hoveredStep)
   const progSteps      = useProgressionStore(s => s.steps)
-  const chordActive    = chordQualityId !== null || (activeStep !== null && progSteps.length > 0)
+  const chordActive    = chordQualityId !== null || (hoveredStep !== null && progSteps.length > 0)
 
   const W    = svgWidth(fretCount)
   const H    = svgHeight()

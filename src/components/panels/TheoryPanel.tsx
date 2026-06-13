@@ -24,11 +24,11 @@ export function TheoryPanel() {
           fontWeight: 800, fontSize: '16px', color: '#fff',
           boxShadow: '0 2px 8px rgba(224,85,85,.25)', flexShrink: 0,
         }}>
-          F
+          N
         </div>
         <div>
-          <div style={{ fontSize: '14.5px', fontWeight: 700, letterSpacing: '-.01em', lineHeight: 1.1 }}>Fretboard Theory</div>
-          <div style={{ fontSize: '11.5px', color: '#8a7f72', marginTop: '2px' }}>Scale & mode explorer</div>
+          <div style={{ fontSize: '14.5px', fontWeight: 700, letterSpacing: '-.01em', lineHeight: 1.1 }}>Neckwise</div>
+          <div style={{ fontSize: '11.5px', color: '#8a7f72', marginTop: '2px' }}>Explore harmony across the fretboard.</div>
         </div>
       </div>
 

@@ -1,4 +1,6 @@
-# Fretboard Theory
+# Neckwise
+
+Explore harmony across the fretboard.
 
 An interactive music theory visualization tool for guitarists — built to make scale and chord relationships tangible directly on the fretboard.
 

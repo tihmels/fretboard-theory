@@ -75,6 +75,7 @@ function save(s: { steps: ProgressionStep[]; activeStep: number | null; bpm: num
 interface ProgressionState {
   steps:      ProgressionStep[]
   activeStep: number | null
+  hoveredStep: number | null
   playing:    boolean
   bpm:        number
   loop:       boolean
@@ -85,6 +86,7 @@ interface ProgressionActions {
   replaceAt: (index: number, degree: number, qualityId?: string) => void
   removeAt:  (index: number)  => void
   focusStep: (index: number | null) => void
+  hoverStep: (index: number | null) => void
   stepBy:    (dir: 1 | -1)   => void
   clear:     () => void
   loadPreset: (preset: typeof COMMON_PROGRESSIONS[number]) => void
@@ -128,6 +130,7 @@ export const useProgressionStore = create<ProgressionState & ProgressionActions>
     return {
       steps:      persisted.steps      ?? [],
       activeStep: persisted.activeStep ?? null,
+      hoveredStep: null,
       playing:    false,
       bpm:        persisted.bpm        ?? 100,
       loop:       persisted.loop       ?? true,
@@ -155,12 +158,17 @@ export const useProgressionStore = create<ProgressionState & ProgressionActions>
         set(s => {
           const steps = s.steps.filter((_, i) => i !== index)
           let activeStep = s.activeStep
+          let hoveredStep = s.hoveredStep
           if (steps.length === 0) activeStep = null
           else if (activeStep != null && activeStep >= steps.length) activeStep = steps.length - 1
-          return { steps, activeStep }
+          if (steps.length === 0) hoveredStep = null
+          else if (hoveredStep === index) hoveredStep = null
+          else if (hoveredStep != null && hoveredStep > index) hoveredStep -= 1
+          return { steps, activeStep, hoveredStep }
         }),
 
       focusStep: index => set({ activeStep: index }),
+      hoverStep: index => set({ hoveredStep: index }),
 
       stepBy: dir =>
         set(s => {
@@ -170,13 +178,13 @@ export const useProgressionStore = create<ProgressionState & ProgressionActions>
           return { activeStep: ((cur + dir) % n + n) % n }
         }),
 
-      clear: () => { stopTimer(); set({ steps: [], activeStep: null, playing: false }) },
+      clear: () => { stopTimer(); set({ steps: [], activeStep: null, hoveredStep: null, playing: false }) },
 
       loadPreset: preset => {
         const { scale } = useTheoryStore.getState()
         const len   = scale?.pattern.length ?? 7
         const steps = preset.steps.filter(st => st.degree <= len)
-        set({ steps, activeStep: steps.length ? 0 : null })
+        set({ steps, activeStep: steps.length ? 0 : null, hoveredStep: null })
       },
 
       toggle: () => {
