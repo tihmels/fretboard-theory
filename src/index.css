@@ -1,0 +1,49 @@
+@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap');
+@import "tailwindcss";
+
+/* ── Design tokens ─────────────────────────────────────────────────────── */
+:root {
+  /* Scale degree dot colors */
+  --deg-1: #e0564f;
+  --deg-2: #e07c30;
+  --deg-3: #cbb02e;
+  --deg-4: #54a64f;
+  --deg-5: #3897d6;
+  --deg-6: #7a57d6;
+  --deg-7: #c23bb6;
+
+  /* Fretboard surfaces */
+  --fb-wood:  #1c120c;
+  --fb-nut:   #efe3b8;
+  --fb-fret:  #998976;
+  --fb-inlay: #b59a6a;
+
+  /* UI chrome */
+  --bg-app:        #100d0b;
+  --bg-panel:      #16120e;
+  --border-subtle: #2a221b;
+  --text-primary:  #ede6dd;
+  --text-secondary:#b3a89a;
+  --text-muted:    #8a7f72;
+  --text-dimmer:   #6b6258;
+  --text-dimmest:  #574d42;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #33291f; border-radius: 6px; border: 2px solid #16120e; }
+::-webkit-scrollbar-thumb:hover { background: #42352a; }
+::-webkit-scrollbar-track { background: transparent; }
