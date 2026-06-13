@@ -34,7 +34,8 @@ export function CircleOfFifths() {
   const root    = useTheoryStore(s => s.root)
   const scale   = useTheoryStore(s => s.scale)
   const setRoot = useTheoryStore(s => s.setRoot)
-  const [mode, setMode] = useState<CircleMode>('fifths')
+  const [mode, setMode]       = useState<CircleMode>('fifths')
+  const [hoveredPc, setHoveredPc] = useState<number | null>(null)
 
   const progSteps  = useProgressionStore(s => s.steps)
   const activeStep = useProgressionStore(s => s.activeStep)
@@ -171,28 +172,48 @@ export function CircleOfFifths() {
         </text>
 
         {/* Note nodes */}
-        {nodes.map(({ pc, x, y, fill, textColor, isScaleRoot, isChordRoot, isChordTone }) => (
-          <g key={pc} onClick={() => setRoot(pc)} style={{ cursor: 'pointer' }}>
-            {/* White halo: scale root (no chord) or chord root */}
-            {(isChordRoot || (!chordActive && isScaleRoot)) && (
-              <circle cx={x} cy={y} r={NODE_R + 4.5} fill="none" stroke="rgba(255,255,255,.92)" strokeWidth={2.5} />
-            )}
-            {/* Golden ring: non-root chord tones */}
-            {isChordTone && !isChordRoot && (
-              <circle cx={x} cy={y} r={NODE_R + 4} fill="none" stroke="#f0d28a" strokeWidth={2.5} />
-            )}
-            <circle cx={x} cy={y} r={NODE_R} fill={fill} stroke="rgba(0,0,0,.3)" strokeWidth={1} />
-            <text
-              x={x} y={y + 0.5}
-              textAnchor="middle" dominantBaseline="central"
-              fill={textColor} fontSize={11}
-              fontFamily="'JetBrains Mono', monospace" fontWeight={700}
-              style={{ userSelect: 'none', pointerEvents: 'none' }}
+        {nodes.map(({ pc, x, y, fill, textColor, isScaleRoot, isChordRoot, isChordTone, name }) => {
+          const isHovered = hoveredPc === pc
+          const hasSpecialRing = isChordRoot || (!chordActive && isScaleRoot)
+          return (
+            <g
+              key={pc}
+              onClick={() => setRoot(pc as PitchClass)}
+              onMouseEnter={() => setHoveredPc(pc)}
+              onMouseLeave={() => setHoveredPc(null)}
+              style={{ cursor: 'pointer' }}
             >
-              {noteName(pc, root)}
-            </text>
-          </g>
-        ))}
+              <title>Set root: {name}</title>
+              {/* White halo: scale root (no chord) or chord root */}
+              {hasSpecialRing && (
+                <circle cx={x} cy={y} r={NODE_R + 4.5} fill="none" stroke="rgba(255,255,255,.92)" strokeWidth={2.5} />
+              )}
+              {/* Golden ring: non-root chord tones */}
+              {isChordTone && !isChordRoot && (
+                <circle cx={x} cy={y} r={NODE_R + 4} fill="none" stroke="#f0d28a" strokeWidth={2.5} />
+              )}
+              {/* Hover ring: subtle glow when not already highlighted */}
+              {isHovered && !hasSpecialRing && (
+                <circle cx={x} cy={y} r={NODE_R + 4} fill="none" stroke="rgba(255,255,255,.2)" strokeWidth={1.5} />
+              )}
+              <circle
+                cx={x} cy={y} r={NODE_R}
+                fill={fill}
+                stroke={isHovered ? 'rgba(255,255,255,.25)' : 'rgba(0,0,0,.3)'}
+                strokeWidth={isHovered ? 1.5 : 1}
+              />
+              <text
+                x={x} y={y + 0.5}
+                textAnchor="middle" dominantBaseline="central"
+                fill={textColor} fontSize={11}
+                fontFamily="'JetBrains Mono', monospace" fontWeight={700}
+                style={{ userSelect: 'none', pointerEvents: 'none' }}
+              >
+                {name}
+              </text>
+            </g>
+          )
+        })}
       </svg>
 
       {/* Key facts */}

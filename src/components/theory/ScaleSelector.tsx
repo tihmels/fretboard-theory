@@ -20,9 +20,22 @@ export function ScaleSelector() {
 
   return (
     <section style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-      <h2 style={{ fontSize: '10.5px', fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: '#6b6258', marginBottom: '16px', position: 'sticky', top: 0, background: 'var(--bg-panel)', paddingTop: '4px', paddingBottom: '4px' }}>
-        Scale
-      </h2>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, background: 'var(--bg-panel)', paddingTop: '4px', paddingBottom: '4px', marginBottom: '16px' }}>
+        <h2 style={{ fontSize: '10.5px', fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: '#6b6258' }}>
+          Scale
+        </h2>
+        {scale && (
+          <button
+            onClick={() => setScale(null)}
+            title="Clear scale"
+            style={{ fontSize: '10px', color: '#574d42', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'color .12s' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#b3a89a' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#574d42' }}
+          >
+            clear
+          </button>
+        )}
+      </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {categories.map(([cat, scales]) => (
           <div key={cat}>
@@ -35,7 +48,8 @@ export function ScaleSelector() {
                 return (
                   <button
                     key={s.id}
-                    onClick={() => setScale(s)}
+                    onClick={() => setScale(scale?.id === s.id ? null : s)}
+                    title={`${s.name} · ${s.degrees.join('  ')}`}
                     style={{
                       display: 'flex',
                       alignItems: 'center',

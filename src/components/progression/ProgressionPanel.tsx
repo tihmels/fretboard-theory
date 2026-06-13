@@ -26,6 +26,7 @@ const BTN: React.CSSProperties = {
   color: '#9a8f82', background: '#1b150f',
   border: '1px solid #2a221b', borderRadius: '8px',
   cursor: 'pointer', fontFamily: 'inherit',
+  transition: 'background .12s, color .12s',
 }
 
 export function ProgressionPanel() {
@@ -48,12 +49,8 @@ export function ProgressionPanel() {
   const toggleLoop = useProgressionStore(s => s.toggleLoop)
   const loadPreset = useProgressionStore(s => s.loadPreset)
 
-  // editCursor: which slot is targeted by the next diatonic chord tap.
-  // 'new' = append to end (default); a number = replace that step.
   const [editCursor, setEditCursor] = useState<number | 'new'>('new')
 
-  // Derive the effective cursor — clamps to the last step if steps were deleted
-  // while the cursor was pointing past the end. Pure derivation, no effect needed.
   const ec: number | 'new' =
     editCursor === 'new' || editCursor < steps.length
       ? editCursor
@@ -64,24 +61,21 @@ export function ProgressionPanel() {
   const resolved = useMemo(() => {
     if (!scale || steps.length === 0) return []
     try { return resolveProgression(root, scale, { steps }) }
-    catch { return [] }
+    catch { /* resolveProgression throws for non-diatonic scales */ return [] }
   }, [root, scale, steps])
 
   const scaleLen  = scale?.pattern.length ?? 0
   const progEmpty = steps.length === 0
   const progPos   = steps.length ? `${(activeStep ?? 0) + 1} / ${steps.length}` : '–'
 
-  // Context-aware tap: replace selected step or append at the end
   const handleDiatonicTap = (deg: number) => {
     if (ec === 'new') {
       const newIdx = steps.length
       append(deg)
       focusStep(newIdx)
-      // editCursor stays 'new' for sequential chord building
     } else {
       replaceAt(ec, deg)
-      focusStep(ec)  // fretboard shows the replaced chord + triggers audio
-      // Advance cursor: next step or back to 'new' (the placeholder)
+      focusStep(ec)
       const next = ec + 1
       if (next < steps.length) {
         setEditCursor(next)
@@ -132,6 +126,8 @@ export function ProgressionPanel() {
                 <button
                   key={i}
                   onClick={() => handleDiatonicTap(deg)}
+                  title={`${rootName} ${chord.quality.name}`}
+                  className={!isActive ? 'h-chord' : ''}
                   style={{
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
                     padding: '9px 14px', borderRadius: '10px',
@@ -172,25 +168,28 @@ export function ProgressionPanel() {
             </span>
           </div>
           <div style={{ display: 'flex', gap: '5px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <button onClick={restart} style={BTN} title="Restart">&#x23EE;</button>
-            <button onClick={() => stepBy(-1)} style={BTN} title="Previous">&#x25C0;</button>
+            <button onClick={restart} style={BTN} className="h-icon" title="Restart">&#x23EE;</button>
+            <button onClick={() => stepBy(-1)} style={BTN} className="h-icon" title="Previous step">&#x25C0;</button>
             <button
               onClick={toggle}
-              title={playing ? 'Pause' : 'Play'}
+              title={playing ? 'Pause (Space)' : 'Play (Space)'}
+              className={!progEmpty ? 'h-icon' : ''}
               style={{
                 width: '34px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: playing ? '11px' : '13px', color: '#fff',
                 background: progEmpty ? '#3a2e22' : '#e0564f',
                 border: 'none', borderRadius: '8px',
                 cursor: progEmpty ? 'default' : 'pointer', fontFamily: 'inherit',
+                transition: 'background .12s',
               }}
             >
               {playing ? '❚❚' : '▶'}
             </button>
-            <button onClick={() => stepBy(1)} style={BTN} title="Next">&#x25B6;</button>
+            <button onClick={() => stepBy(1)} style={BTN} className="h-icon" title="Next step">&#x25B6;</button>
             <button
               onClick={toggleLoop}
-              title={loop ? 'Loop on' : 'Loop off'}
+              title={loop ? 'Loop: on' : 'Loop: off'}
+              className="h-icon"
               style={{
                 ...BTN,
                 color: loop ? '#e0a85a' : '#6b6258',
@@ -203,11 +202,11 @@ export function ProgressionPanel() {
             </button>
             {/* BPM control */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '2px', marginLeft: '4px', background: '#1b150f', border: '1px solid #2a221b', borderRadius: '8px', padding: '0 3px' }}>
-              <button onClick={() => setBpm(bpm - 5)} style={{ width: '20px', height: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', color: '#8a7f72', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>&#x2212;</button>
+              <button onClick={() => setBpm(bpm - 5)} title="Decrease BPM" className="h-ghost" style={{ width: '20px', height: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', color: '#8a7f72', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'color .12s' }}>&#x2212;</button>
               <span style={{ fontSize: '11px', fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, color: '#c7bcae', minWidth: '52px', textAlign: 'center' }}>{bpm} BPM</span>
-              <button onClick={() => setBpm(bpm + 5)} style={{ width: '20px', height: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', color: '#8a7f72', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>+</button>
+              <button onClick={() => setBpm(bpm + 5)} title="Increase BPM" className="h-ghost" style={{ width: '20px', height: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', color: '#8a7f72', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'color .12s' }}>+</button>
             </div>
-            <button onClick={clear} style={{ fontSize: '11.5px', color: '#8a7f72', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit', marginLeft: '4px' }}>
+            <button onClick={clear} title="Clear progression" className="h-ghost" style={{ fontSize: '11.5px', color: '#8a7f72', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit', marginLeft: '4px', transition: 'color .12s' }}>
               Clear
             </button>
           </div>
@@ -220,31 +219,32 @@ export function ProgressionPanel() {
           background: '#100c09', border: '1px solid #221b14', borderRadius: '11px',
         }}>
           {progEmpty && ec === 'new' ? (
-            // Empty + placeholder focused: show a single highlighted placeholder
             <NewSlotCard isFocused onClick={() => {}} />
           ) : (
             <>
               {steps.map((step, idx) => {
                 const chord    = resolved[idx]
-                const isPlay   = activeStep === idx           // playhead
-                const isEdit   = ec === idx                   // edit cursor
+                const isPlay   = activeStep === idx
+                const isEdit   = ec === idx
                 const deg      = step.degree
                 const fill     = DEGREE_FILLS[Math.min(7, deg)] ?? DEGREE_FILLS[1]
                 const numeral  = chord ? romanNumeral(deg - 1, chord.quality) : ROMAN[deg - 1] ?? `${deg}`
                 const noteName = chord ? getPitchName(chord.root, 'auto', root) : ''
                 const qualSym  = chord?.quality.symbol ?? ''
+                const tipLabel = chord ? `${noteName}${chord.quality.name}` : ''
 
                 return (
                   <div
                     key={idx}
                     onClick={() => handleStepClick(idx)}
+                    title={tipLabel}
+                    className={!isPlay && !isEdit ? 'h-card' : ''}
                     style={{
                       position: 'relative',
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
                       padding: '13px 16px 10px', borderRadius: '10px',
                       cursor: 'pointer', minWidth: '62px',
                       transition: 'border-color .12s, background .12s, box-shadow .12s',
-                      // Edit cursor: bright border; playhead: amber warm bg; both: combined
                       border: isEdit
                         ? '1px solid #8a7f72'
                         : isPlay
@@ -254,19 +254,16 @@ export function ProgressionPanel() {
                       boxShadow: isEdit ? '0 0 0 2px rgba(200,190,178,.12)' : 'none',
                     }}
                   >
-                    {/* Amber playhead bar at top */}
                     <span style={{
                       position: 'absolute', top: 0, left: '12px', right: '12px',
                       height: '3px', borderRadius: '0 0 2px 2px',
                       background: isPlay ? '#e0a85a' : 'transparent',
                     }} />
-                    {/* Edit cursor underline at bottom */}
                     <span style={{
                       position: 'absolute', bottom: 0, left: '12px', right: '12px',
                       height: '2px', borderRadius: '2px 2px 0 0',
                       background: isEdit ? 'rgba(200,190,178,.5)' : 'transparent',
                     }} />
-                    {/* Step number */}
                     <span style={{
                       position: 'absolute', top: '5px', left: '8px',
                       fontSize: '9px', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700,
@@ -274,25 +271,25 @@ export function ProgressionPanel() {
                     }}>
                       {idx + 1}
                     </span>
-                    {/* Roman numeral */}
                     <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '19px', fontWeight: 700, color: fill, lineHeight: 1, marginTop: '4px' }}>
                       {numeral}
                     </span>
-                    {/* Root + quality */}
                     <span style={{ fontSize: '13px', color: isPlay ? '#f1ebe2' : isEdit ? '#c7bcae' : '#9a8f82', fontWeight: 700, lineHeight: 1.2, fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'nowrap' }}>
                       {noteName}<span style={{ fontSize: '11px', fontWeight: 500, color: isPlay ? '#b3a89a' : '#6b6258' }}>{qualSym}</span>
                     </span>
-                    {/* Remove button */}
                     <span
                       onClick={e => { e.stopPropagation(); removeAt(idx) }}
                       role="button"
                       aria-label="Remove"
+                      title="Remove"
+                      className="h-danger"
                       style={{
                         position: 'absolute', top: '-8px', right: '-7px',
                         width: '17px', height: '17px', borderRadius: '50%',
                         background: '#2a221b', color: '#8a7f72', fontSize: '12px',
                         lineHeight: '15px', textAlign: 'center',
                         border: '1px solid #100c09', cursor: 'pointer',
+                        transition: 'background .12s, color .12s, border-color .12s',
                       }}
                     >
                       &#xd7;
@@ -301,7 +298,6 @@ export function ProgressionPanel() {
                 )
               })}
 
-              {/* ── "+" new-slot placeholder ─── */}
               <NewSlotCard
                 isFocused={ec === 'new'}
                 onClick={() => setEditCursor('new')}
@@ -318,6 +314,8 @@ export function ProgressionPanel() {
               <button
                 key={p.name}
                 onClick={() => { if (ok) { loadPreset(p); setEditCursor('new') } }}
+                title={ok ? `Load: ${p.name}` : 'Requires a 7-tone scale'}
+                className={ok ? 'h-chip' : ''}
                 style={{
                   fontSize: '11.5px', fontFamily: "'JetBrains Mono', monospace", fontWeight: 600,
                   color: ok ? '#9a8f82' : '#3f352a',
@@ -325,6 +323,7 @@ export function ProgressionPanel() {
                   padding: '5px 10px',
                   cursor: ok ? 'pointer' : 'not-allowed',
                   opacity: ok ? 1 : 0.5,
+                  transition: 'background .12s, border-color .12s, color .12s',
                 }}
               >
                 {p.name}
@@ -342,6 +341,7 @@ function NewSlotCard({ isFocused, onClick }: { isFocused: boolean; onClick: () =
     <div
       onClick={onClick}
       title="Add chord here"
+      className="h-new-slot"
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         width: '62px', height: '70px', borderRadius: '10px',

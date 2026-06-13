@@ -46,8 +46,11 @@ export function FretboardCell({ annotation, x, y, chordActive }: Props) {
   // because annotateNote measures semitones from chord.root when chord is active.
   const showRing = annotation.semitones === 0
 
+  const tooltipText = `${annotation.pitchName}  ${annotation.degreeLabel}`
+
   return (
-    <g opacity={dimmed ? 0.16 : 1}>
+    <g opacity={dimmed ? 0.16 : 1} style={{ cursor: 'default' }}>
+      <title>{tooltipText}</title>
       {showRing && (
         <circle
           cx={x} cy={y}

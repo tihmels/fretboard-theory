@@ -31,6 +31,35 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
+/* Keyboard focus ring — visible only on keyboard navigation */
+button:focus-visible { outline: 2px solid rgba(56,151,214,.5); outline-offset: 2px; border-radius: inherit; }
+
+/* ── Hover utility classes ─────────────────────────────────────────────── */
+/* Used on buttons that have dynamic inline styles for their active state.  */
+/* !important is intentional — these only fire on :hover, not the base.    */
+
+/* Icon/transport buttons */
+.h-icon:hover  { background-color: #2c241c !important; color: #d4c9bb !important; }
+
+/* Ghost text buttons (Clear) */
+.h-ghost:hover { color: #c7bcae !important; }
+
+/* Preset & general panel chip buttons */
+.h-chip:hover  { background-color: #241e17 !important; border-color: #3d3028 !important; color: #c7bcae !important; }
+
+/* Diatonic chord buttons & step-adjacent chips */
+.h-chord:hover { background-color: #231b13 !important; border-color: #3a2e22 !important; }
+
+/* Progression step cards (non-active) */
+.h-card:hover  { border-color: #4a3a2c !important; background-color: #1c1610 !important; }
+
+/* Danger (remove ×) */
+.h-danger:hover { background-color: rgba(224,86,79,.22) !important; color: #e0564f !important; border-color: rgba(224,86,79,.4) !important; }
+
+/* New-slot "+" card */
+.h-new-slot:hover { border-color: #4a3d31 !important; }
+.h-new-slot:hover span { color: #5a5046 !important; }
+
 html, body, #root {
   margin: 0;
   height: 100%;
