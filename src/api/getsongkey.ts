@@ -30,7 +30,7 @@ function cacheGet(title: string, artist: string): GetsongkeyKeyResult | null | u
 function cacheSet(title: string, artist: string, value: GetsongkeyKeyResult | null) {
   try {
     localStorage.setItem(cacheKey(title, artist), JSON.stringify({ value, ts: Date.now() }))
-  } catch {}
+  } catch { /* localStorage may be unavailable */ }
 }
 
 // Parses "Em", "A", "C#", "Bbm", "F#m" → pitchClass + mode
