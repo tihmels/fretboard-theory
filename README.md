@@ -99,7 +99,13 @@ npm run build     # production build
 
 ## Roadmap
 
-- **Songs by key** — find songs recorded in the same key (root + mode). Spotify's audio-features API provides per-track `key` and `mode` values and a `/recommendations?target_key=&target_mode=` endpoint. Requires a small serverless proxy (Vercel/Cloudflare Worker) to keep Spotify credentials out of the frontend bundle. Once that's in place, the integration is straightforward alongside the existing Hooktheory panel.
+- **Serverless API proxy** — a single Vercel/Cloudflare Worker function acting as a unified gateway for all external music APIs:
+  - Hides `SPOTIFY_CLIENT_SECRET` from the frontend bundle
+  - Provides stable CORS for Hooktheory (avoids long-term browser policy issues)
+  - Caches Hooktheory results per chord path (they rarely change, saves rate-limit quota)
+  - Routes: `/api/spotify/token`, `/api/spotify/recommendations`, `/api/hooktheory/auth`, `/api/hooktheory/songs`, `/api/hooktheory/nodes`
+
+- **Songs by key** — find songs recorded in the same key (root + mode). Spotify's `/recommendations?target_key=&target_mode=` endpoint returns songs in a given key. Blocked on the proxy above (Spotify client credentials can't live in the browser). Once the proxy is up, this is a second tab alongside the existing "Songs by progression" panel.
 
 ---
 
