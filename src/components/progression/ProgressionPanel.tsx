@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useTheoryStore } from '../../store/theory'
 import { useProgressionStore, COMMON_PROGRESSIONS } from '../../store/progression'
 import { getDiatonicChords } from '../../theory/chords'
@@ -6,6 +6,7 @@ import { resolveProgression } from '../../theory/progression'
 import { getPitchName } from '../../theory/pitch'
 import { DEGREE_FILLS } from '../fretboard/colors'
 import { SongMatchesPanel } from './SongMatchesPanel'
+import { playChord } from '../../audio/chordSynth'
 import type { ChordQuality } from '../../theory/types'
 
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII']
@@ -88,10 +89,15 @@ export function ProgressionPanel() {
     }
   }
 
-  const handleStepClick = (idx: number) => {
+  const handleStepClick = useCallback((idx: number) => {
+    const alreadySelected = ec === idx && activeStep === idx
     setEditCursor(idx)
     focusStep(idx)
-  }
+    if (alreadySelected) {
+      const chord = useProgressionStore.getState().activeChord()
+      if (chord) playChord(chord.root, chord.quality.pattern)
+    }
+  }, [ec, activeStep, focusStep])
 
   return (
     <div style={{
