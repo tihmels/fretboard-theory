@@ -211,7 +211,7 @@ export function SongMatchesPanel() {
     if (!o || !auth || !degs.length) {
       searchIdRef.current++
       augmentIdRef.current++
-      setMatches([]); setAugments([]); setPage(1); setError(null); setHasMore(false)
+      setMatches([]); setAugments([]); setPage(1); setError(null); setHasMore(false); setLoading(false)
       return
     }
     runSearch(tok)

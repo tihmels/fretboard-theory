@@ -27,7 +27,6 @@ function encodeChildPath(childPath: string): string {
 function authHeaders(token: string): HeadersInit {
   return {
     Accept: 'application/json',
-    'Content-Type': 'application/json',
     Authorization: `Bearer ${token}`,
   }
 }
@@ -93,8 +92,9 @@ export async function fetchHooktheorySongMatches(
       throw new Error('Hooktheory rate limit reached. Try again shortly.')
     }
     if (response.status >= 500) {
-      if (page > 1) return []
-      throw new Error(`Hooktheory errored on this exact progression (${childPath}). Try a shorter progression or a different chord sequence.`)
+      throw new Error(page > 1
+        ? 'Hooktheory returned an error loading more results. Try again.'
+        : `Hooktheory errored on this exact progression (${childPath}). Try a shorter progression or a different chord sequence.`)
     }
     throw new Error(`Hooktheory request failed (${response.status}).`)
   }

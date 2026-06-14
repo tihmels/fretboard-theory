@@ -4,13 +4,15 @@ Agent-facing guide for this codebase. Read this before making any changes.
 
 ## What this is
 
-A pure-frontend guitar music theory visualizer. Users pick a root note, scale, and optionally a chord quality; the SVG fretboard highlights matching positions with degree-colored dots. No backend, no auth, no audio in v1.
+A pure-frontend guitar music theory app. Users pick a root note and scale to highlight matching positions on an SVG fretboard. Beyond the basic visualizer, the app has a **progression builder**: users assemble chord sequences by scale degree, play them back with BPM control (Web Audio, Space bar), and optionally look up popular songs that use the same progression via the **Hooktheory API**. Song matches can be augmented with key/BPM data from the **GetSongKey API**. A **circle of fifths/thirds** SVG shows the current scale and active chord in context.
+
+No backend, no auth of its own.
 
 ## Commands
 
 ```bash
 npm run dev        # dev server at localhost:5173
-npm run test:run   # run all 63 unit tests once (fast, use this before committing)
+npm run test:run   # run all 87 unit tests once (fast, use this before committing)
 npm test           # watch mode
 npm run build      # tsc type-check + vite bundle (must pass before shipping)
 npm run lint       # eslint
@@ -18,16 +20,26 @@ npm run lint       # eslint
 
 Always run `npm run test:run` and `npm run build` after any change to `src/theory/` or `src/store/`. Both must succeed with zero errors before you're done.
 
+**Environment variable** — required for the GetSongKey API (`.env.local`):
+```
+VITE_GETSONGKEY_API_KEY=<key>
+```
+The Hooktheory API uses user-supplied credentials entered in the UI (no env var).
+
 ## Architecture
 
 ```
 src/
   theory/          # Pure TypeScript — zero React. The domain model.
-  store/           # Zustand slices (theory, fretboard, view)
+  store/           # Zustand slices (theory, fretboard, view, progression)
   hooks/           # React hooks that bridge store → theory engine
+  api/             # External API clients (GetSongKey, Hooktheory)
+  audio/           # Web Audio chord synthesizer
   components/
     fretboard/     # SVG rendering (FretboardView, FretboardCell, NoteChips, …)
+    circle/        # CircleOfFifths SVG (fifths and thirds modes)
     theory/        # Selector UI (RootSelector, ScaleSelector, ChordQualitySelector)
+    progression/   # Progression builder + song matches panels
     panels/        # TheoryPanel (sidebar wrapper)
     ui/            # Generic controls (LabelModeToggle)
   utils/           # URL encode/decode
@@ -43,21 +55,35 @@ The only place music math happens. All functions are pure — no side effects, n
 - **`chords.ts`** — 17 chord qualities; `getChordNotes`, `getChordToneRole`, `getDiatonicChords`
 - **`fretboard.ts`** — `buildFretboardGrid(tuning, fretCount)` → `FretboardNote[][]`
 - **`annotation.ts`** — `annotateGrid(grid, ctx)` → `NoteAnnotation[][]`. This is the composition point: every note on the neck gets a `role` and a display `label` based on the current root/scale/chord context.
+- **`progression.ts`** — `ProgressionStep`, `Progression`, `resolveProgression`, `COMMON_PROGRESSIONS`.
+- **`progressionSearch.ts`** — helpers that map `ProgressionStep[]` to Hooktheory child-path strings.
 - **`constants.ts`** — `SHARP_NAMES`, `FLAT_NAMES`, `ROOT_PREFERS_SHARPS`, `SEMITONE_TO_DEGREE`
 
 When you add a scale or chord quality, add it here and add a test. Never import React in this folder.
 
 ### Stores (`src/store/`)
 
-Three independent Zustand slices:
+Four independent Zustand slices:
 
 | Store | Key state |
 |---|---|
 | `theory.ts` | `root: PitchClass`, `scale: ScaleDef \| null`, `chordQualityId: string \| null` |
 | `fretboard.ts` | `tuning: Tuning`, `fretCount: number` (default 15), `startFret: number` |
 | `view.ts` | `labelMode: 'note' \| 'degree' \| 'interval'` |
+| `progression.ts` | `steps: ProgressionStep[]`, `activeStep`, `playing`, `bpm`, `loop` |
 
-The `chordQualityId` stores only the quality ID (not the full chord). The chord root always follows `root` — the `Chord` object is derived inside `useFretboardAnnotations` so they stay in sync automatically.
+`chordQualityId` stores only the quality ID (not the full chord). The chord root always follows `root` — the `Chord` object is derived inside `useFretboardAnnotations` so they stay in sync automatically.
+
+`progression.ts` auto-persists to `localStorage` (key `ftp.v1`). The active step drives what the fretboard and circle highlight during playback. The store exposes `resolved()` and `activeChord()` as derived getters (not persisted state).
+
+### API clients (`src/api/`)
+
+- **`getsongkey.ts`** — `lookupSongKey(title, artist)` → `{ pitchClass, mode, tempo? } | null`. Caches results in `localStorage` for 7 days (namespace `gsk|`). Requires `VITE_GETSONGKEY_API_KEY`.
+- **`hooktheory.ts`** — `fetchHooktheoryToken`, `resolveHooktheoryBasicChildPath`, `fetchHooktheorySongMatches`. Hooktheory requires a bearer token obtained by POSTing user credentials to their API; the UI handles the credential prompt. In-memory cache (Map) per session.
+
+### Audio (`src/audio/`)
+
+- **`chordSynth.ts`** — `playChord(rootPc, pattern)`. Uses the Web Audio API (triangle oscillators, pluck envelope, ~28ms strum spread). Lazy-initializes an `AudioContext` on first call.
 
 ### The rendering pipeline
 
@@ -118,6 +144,10 @@ Root notes render with a white ring halo (`r = dotRadius + 3.5`, `stroke rgba(25
 ## URL state
 
 `useShareUrl` (mounted in `App.tsx`) encodes `?root=G&scale=dorian&chord=min7&label=degree`. On mount it hydrates stores from the URL. On store change it calls `history.replaceState`. See `src/utils/url.ts` for encode/decode.
+
+## Keyboard shortcuts
+
+Space bar — play/pause the progression (handled in `useKeyboardShortcuts`, ignored when focus is in an input/textarea).
 
 ## Adding features
 

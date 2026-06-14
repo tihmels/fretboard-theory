@@ -39,9 +39,9 @@ function parseKeyOf(raw: string): { pitchClass: PitchClass; mode: 0 | 1 } | null
   const lc = s.toLowerCase()
 
   let notePart = s.split(/\s+/)[0]
-  const isMinor = lc.includes('minor') || /m$/i.test(notePart)
+  const isMinor = lc.includes('minor') || /m$/.test(notePart)
   const mode: 0 | 1 = isMinor ? 0 : 1
-  if (isMinor && /m$/i.test(notePart)) notePart = notePart.slice(0, -1)
+  if (isMinor && /m$/.test(notePart)) notePart = notePart.slice(0, -1)
   notePart = notePart.charAt(0).toUpperCase() + notePart.slice(1).toLowerCase()
 
   const SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B']
