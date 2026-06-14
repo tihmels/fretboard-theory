@@ -14,6 +14,9 @@ interface HooktheoryNode {
 
 const API_ROOT = 'https://api.hooktheory.com/v1'
 
+const childPathCache = new Map<string, string>()
+const songMatchCache = new Map<string, HooktheorySongMatch[]>()
+
 function encodeChildPath(childPath: string): string {
   return childPath
     .split(',')
@@ -71,6 +74,10 @@ export async function fetchHooktheorySongMatches(
   childPath: string,
   page = 1,
 ): Promise<HooktheorySongMatch[]> {
+  const cacheKey = `${childPath}:${page}`
+  const cached = songMatchCache.get(cacheKey)
+  if (cached) return cached
+
   const query = [`cp=${encodeChildPath(childPath)}`]
   if (page > 1) query.push(`page=${encodeURIComponent(String(page))}`)
 
@@ -86,6 +93,7 @@ export async function fetchHooktheorySongMatches(
       throw new Error('Hooktheory rate limit reached. Try again shortly.')
     }
     if (response.status >= 500) {
+      if (page > 1) return []
       throw new Error(`Hooktheory errored on this exact progression (${childPath}). Try a shorter progression or a different chord sequence.`)
     }
     throw new Error(`Hooktheory request failed (${response.status}).`)
@@ -94,7 +102,7 @@ export async function fetchHooktheorySongMatches(
   const data: unknown = await response.json()
   if (!Array.isArray(data)) return []
 
-  return data
+  const results = data
     .filter((item): item is HooktheorySongMatch => {
       if (!item || typeof item !== 'object') return false
       const row = item as Record<string, unknown>
@@ -109,12 +117,19 @@ export async function fetchHooktheorySongMatches(
       ...match,
       url: match.url.replace('http://local.www.hooktheory.com', 'https://www.hooktheory.com'),
     }))
+
+  songMatchCache.set(cacheKey, results)
+  return results
 }
 
 export async function resolveHooktheoryBasicChildPath(
   token: string,
   degrees: number[],
 ): Promise<string> {
+  const degreesKey = degrees.join(',')
+  const cached = childPathCache.get(degreesKey)
+  if (cached !== undefined) return cached
+
   let childPath = ''
 
   for (const degree of degrees) {
@@ -157,5 +172,6 @@ export async function resolveHooktheoryBasicChildPath(
     childPath = nextNode.child_path
   }
 
+  childPathCache.set(degreesKey, childPath)
   return childPath
 }
