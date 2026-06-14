@@ -25,6 +25,28 @@ function getCtx(): AudioContext {
  * interval offsets (e.g. [0, 4, 7] for major).
  * Notes are spread across octaves and slightly arpeggiated (strum feel).
  */
+export function playNote(midi: number): void {
+  try {
+    const ac  = getCtx()
+    const now = ac.currentTime
+    const freq = 440 * Math.pow(2, (midi - 69) / 12)
+    const osc  = ac.createOscillator()
+    const gain = ac.createGain()
+    osc.type = 'triangle'
+    osc.frequency.value = freq
+    gain.gain.setValueAtTime(0, now)
+    gain.gain.linearRampToValueAtTime(0.22, now + 0.008)
+    gain.gain.exponentialRampToValueAtTime(0.08, now + 0.13)
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5)
+    osc.connect(gain)
+    gain.connect(ac.destination)
+    osc.start(now)
+    osc.stop(now + 1.55)
+  } catch {
+    // AudioContext may be blocked by browser autoplay policy
+  }
+}
+
 export function playChord(rootPc: number, pattern: number[]): void {
   try {
     const ac  = getCtx()

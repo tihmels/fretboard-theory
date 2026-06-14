@@ -97,10 +97,8 @@ function App() {
           <NoteChips />
         </div>
 
-        <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 40px 16px', overflowX: 'auto', overflowY: 'hidden' }}>
-          <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-            <FretboardView />
-          </div>
+        <div style={{ flex: 1, minHeight: 0, padding: '0 40px', overflow: 'hidden' }}>
+          <FretboardView />
         </div>
 
         <ProgressionPanel />

@@ -76,3 +76,12 @@ body {
 ::-webkit-scrollbar-thumb { background: #33291f; border-radius: 6px; border: 2px solid #16120e; }
 ::-webkit-scrollbar-thumb:hover { background: #42352a; }
 ::-webkit-scrollbar-track { background: transparent; }
+
+@keyframes fbripple {
+  from { opacity: 0.55; transform: scale(1); }
+  to   { opacity: 0;    transform: scale(2.2); }
+}
+@keyframes fbglow {
+  0%, 100% { opacity: 0.3; }
+  50%      { opacity: 0.95; }
+}

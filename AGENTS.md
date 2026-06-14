@@ -57,6 +57,7 @@ The only place music math happens. All functions are pure — no side effects, n
 - **`annotation.ts`** — `annotateGrid(grid, ctx)` → `NoteAnnotation[][]`. This is the composition point: every note on the neck gets a `role` and a display `label` based on the current root/scale/chord context.
 - **`progression.ts`** — `ProgressionStep`, `Progression`, `resolveProgression`, `COMMON_PROGRESSIONS`.
 - **`progressionSearch.ts`** — helpers that map `ProgressionStep[]` to Hooktheory child-path strings.
+- **`identify.ts`** — `detectInterval(midiA, midiB)` → interval name; `detectChord(pcs[])` → chord root/symbol/word. Used by the identify-mode readout.
 - **`constants.ts`** — `SHARP_NAMES`, `FLAT_NAMES`, `ROOT_PREFERS_SHARPS`, `SEMITONE_TO_DEGREE`
 
 When you add a scale or chord quality, add it here and add a test. Never import React in this folder.
@@ -71,6 +72,7 @@ Four independent Zustand slices:
 | `fretboard.ts` | `tuning: Tuning`, `fretCount: number` (default 15), `startFret: number` |
 | `view.ts` | `labelMode: 'note' \| 'degree' \| 'interval'` |
 | `progression.ts` | `steps: ProgressionStep[]`, `activeStep`, `playing`, `bpm`, `loop` |
+| `interactive.ts` | `hoverPc: PitchClass \| null`, `posIdx: number \| null`, `identify: boolean`, `pinned: PinnedNote[]` |
 
 `chordQualityId` stores only the quality ID (not the full chord). The chord root always follows `root` — the `Chord` object is derived inside `useFretboardAnnotations` so they stay in sync automatically.
 
@@ -90,10 +92,14 @@ Four independent Zustand slices:
 ```
 stores → useFretboardAnnotations (useMemo) → annotateGrid → NoteAnnotation[][]
                                                                      ↓
-                                                            FretboardView → FretboardCell (per dot)
+                                              FretboardView (toolbar + SVG + readout)
+                                                                     ↓
+                                                     FretboardCell (per note, ALL notes)
 ```
 
-`NoteAnnotation` carries everything a cell needs to render: `role`, `label`, `highlighted`, `semitones` (from root), `degreeLabel`, `pitchName`.
+`NoteAnnotation` carries everything a cell needs: `role`, `label`, `highlighted`, `semitones`, `degreeLabel`, `pitchName`.
+
+`FretboardView` now owns all interactive state (via `useInteractiveStore`) and renders three zones: a `FretboardToolbar` (position/identify/hear-scale controls), the SVG with note dots and overlays, and a `FretboardReadout` that shows hover and identify-mode results. Every note position — including chromatic (non-scale) notes — renders as a clickable dot; non-scale notes are faint and become more visible in identify mode.
 
 ### SVG coordinate system (`src/components/fretboard/layout.ts`)
 
@@ -144,6 +150,18 @@ Root notes render with a white ring halo (`r = dotRadius + 3.5`, `stroke rgba(25
 ## URL state
 
 `useShareUrl` (mounted in `App.tsx`) encodes `?root=G&scale=dorian&chord=min7&label=degree`. On mount it hydrates stores from the URL. On store change it calls `history.replaceState`. See `src/utils/url.ts` for encode/decode.
+
+## Fretboard interactions
+
+Every fret position is clickable — tap to hear its true pitch (Web Audio, `playNote(midi)`). A ripple animation plays on tap.
+
+**Octave highlighting** — hover any dot to pulse a glow ring on every other instance of that pitch class across the neck. The readout shows the note name and count.
+
+**Position window** — the toolbar's segmented control (Whole neck / 0–4 / 2–6 / 4–8 / 7–11 / 9–13 / 12–15) dims dots outside the selected range to ~14% opacity and draws a gold highlight rect over the active window. The `POSITIONS` constant lives in `src/store/interactive.ts`.
+
+**Identify mode** — toggle "Identify chord" to pin notes. 2 pinned notes → interval name + semitone count. 3+ → chord detection via `detectChord` (15 shapes). Pinned notes show an amber ring and their pitch name. "Clear notes" resets the pins.
+
+**Hear scale** — plays the scale ascending through the current position window (240ms per note), with an amber flash highlight following the playhead.
 
 ## Keyboard shortcuts
 
