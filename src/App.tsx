@@ -104,6 +104,15 @@ function App() {
         </div>
 
         <ProgressionPanel />
+
+        <footer style={{ padding: '6px 40px', flexShrink: 0, textAlign: 'right' }}>
+          <span style={{ fontSize: '11px', color: '#4a4540' }}>
+            Song key data by{' '}
+            <a href="https://getsongbpm.com" target="_blank" rel="noopener noreferrer" style={{ color: '#6b6258', textDecoration: 'underline' }}>
+              getsongbpm.com
+            </a>
+          </span>
+        </footer>
       </main>
     </div>
   )
