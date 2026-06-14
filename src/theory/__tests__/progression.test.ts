@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { resolveProgression, COMMON_PROGRESSIONS } from '../progression'
+import {
+  hooktheoryBasicChildPathFromSteps,
+  hooktheoryBasicDegreesFromSteps,
+} from '../progressionSearch'
 import { SCALES_BY_ID } from '../scales'
 import { CHORD_QUALITIES_BY_ID } from '../chords'
 
@@ -49,5 +53,26 @@ describe('COMMON_PROGRESSIONS', () => {
     expect(names).toContain('ii–V–I')
     expect(names).toContain('I–IV–V–I')
     expect(names).toContain('I–V–vi–IV')
+  })
+})
+
+describe('hooktheoryBasicChildPathFromSteps', () => {
+  it('extracts basic Hooktheory degrees from progression steps', () => {
+    expect(hooktheoryBasicDegreesFromSteps([{ degree: 1 }, { degree: 8 }, { degree: 5 }])).toEqual([1,5])
+  })
+
+  it('serializes progression degrees as a Hooktheory child path', () => {
+    expect(hooktheoryBasicChildPathFromSteps([{ degree: 1 }, { degree: 4 }, { degree: 5 }, { degree: 1 }])).toBe('1,4,5,1')
+  })
+
+  it('uses simple chord IDs and does not encode exact chord qualities yet', () => {
+    expect(hooktheoryBasicChildPathFromSteps([
+      { degree: 1, qualityOverride: CHORD_QUALITIES_BY_ID['dom7'] },
+      { degree: 4, qualityOverride: CHORD_QUALITIES_BY_ID['dom7'] },
+    ])).toBe('1,4')
+  })
+
+  it('drops degrees outside the simple 1-7 Hooktheory search range', () => {
+    expect(hooktheoryBasicChildPathFromSteps([{ degree: 1 }, { degree: 8 }, { degree: 5 }])).toBe('1,5')
   })
 })

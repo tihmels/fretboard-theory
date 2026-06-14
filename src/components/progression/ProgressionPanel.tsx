@@ -5,6 +5,7 @@ import { getDiatonicChords } from '../../theory/chords'
 import { resolveProgression } from '../../theory/progression'
 import { getPitchName } from '../../theory/pitch'
 import { DEGREE_FILLS } from '../fretboard/colors'
+import { SongMatchesPanel } from './SongMatchesPanel'
 import type { ChordQuality } from '../../theory/types'
 
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII']
@@ -334,6 +335,8 @@ export function ProgressionPanel() {
             )
           })}
         </div>
+
+        <SongMatchesPanel />
       </div>
     </div>
   )

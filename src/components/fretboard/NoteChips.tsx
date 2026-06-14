@@ -22,11 +22,8 @@ export function NoteChips() {
   const progSteps      = useProgressionStore(s => s.steps)
   const activeStep     = useProgressionStore(s => s.activeStep)
 
-  if (!scale) return null
-
-  // Resolve the active chord — progression takes precedence over quality selector
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const activeChord: Chord | null = useMemo(() => {
+    if (!scale) return null
     if (activeStep != null && progSteps.length > 0) {
       try {
         const resolved = resolveProgression(root, scale, { steps: progSteps })
@@ -40,6 +37,8 @@ export function NoteChips() {
     }
     return null
   }, [root, scale, chordQualityId, progSteps, activeStep])
+
+  if (!scale) return null
 
   const chordActive = activeChord !== null
 
