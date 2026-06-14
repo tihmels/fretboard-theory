@@ -157,29 +157,26 @@ export function SongMatchesPanel() {
       borderRadius: '11px',
     }}>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-        <span style={{ fontSize: '10.5px', fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: '#6b6258' }}>
+      {/* Header — click anywhere to collapse */}
+      <div
+        onClick={handleClose}
+        title="Collapse"
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', cursor: 'pointer' }}
+      >
+        <span style={{ fontSize: '10.5px', fontWeight: 700, letterSpacing: '.16em', textTransform: 'uppercase', color: '#6b6258', userSelect: 'none' }}>
           Song matches
         </span>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           {isAuthenticated && (
             <button
-              onClick={handleSignOut}
+              onClick={e => { e.stopPropagation(); handleSignOut() }}
               className="h-ghost"
               style={{ fontSize: '10.5px', color: '#574d42', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'color .12s' }}
             >
               Sign out
             </button>
           )}
-          <button
-            onClick={handleClose}
-            className="h-ghost"
-            style={{ fontSize: '16px', lineHeight: 1, color: '#574d42', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', transition: 'color .12s' }}
-            title="Close"
-          >
-            ×
-          </button>
+          <span style={{ fontSize: '16px', lineHeight: 1, color: '#574d42' }}>×</span>
         </div>
       </div>
 
