@@ -96,6 +96,15 @@ export function getDiatonicChords(root: PitchClass, scale: ScaleDef): Chord[] {
   })
 }
 
+/**
+ * Returns the secondary dominant (V7) that resolves to the given diatonic degree.
+ * The secondary dominant root is a perfect fifth (7 semitones) above the target degree's root.
+ */
+export function getSecondaryDominant(targetRoot: PitchClass): Chord {
+  const secDomRoot = ((targetRoot + 7) % 12) as PitchClass
+  return { root: secDomRoot, quality: CHORD_QUALITIES_BY_ID['dom7'] }
+}
+
 function findChordQuality(pattern: number[]): ChordQuality | null {
   const match = CHORD_QUALITIES.find(
     q => q.pattern.length === pattern.length && q.pattern.every((p, i) => p === pattern[i]),

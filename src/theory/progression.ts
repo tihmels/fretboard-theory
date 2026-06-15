@@ -6,6 +6,8 @@ export interface ProgressionStep {
   degree: number           // 1-based scale degree
   chordOverride?: Chord    // optional: overrides the diatonic chord
   qualityOverride?: ChordQuality
+  /** When set, this step is a secondary dominant (V7) of the named target degree (1-based). */
+  secondaryDominantOf?: number
 }
 
 export interface Progression {

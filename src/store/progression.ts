@@ -9,7 +9,7 @@
  * subscribe to activeStep changes and trigger a synth — nothing else changes.
  */
 import { create } from 'zustand'
-import type { Chord } from '../theory/types'
+import type { Chord, PitchClass } from '../theory/types'
 import { CHORD_QUALITIES_BY_ID } from '../theory/chords'
 import {
   resolveProgression,
@@ -18,29 +18,42 @@ import {
 } from '../theory/progression'
 import { useTheoryStore } from './theory'
 
-const tickMs = (bpm: number) => Math.round((60_000 / bpm) * 2)
+// One quarter-note tick at the given BPM
+const quarterMs = (bpm: number) => Math.round(60_000 / bpm)
 
 // ── Serialised shape for localStorage ──────────────────────────────────────
 
-type StoredStep = { degree: number; qualityId?: string }
+export type StoredStep = {
+  degree: number
+  qualityId?: string
+  chordRoot?: number
+  chordQualityId?: string
+  secondaryDominantOf?: number
+}
 
-function serializeSteps(steps: ProgressionStep[]): StoredStep[] {
+export function serializeSteps(steps: ProgressionStep[]): StoredStep[] {
   return steps.map(s => ({
     degree: s.degree,
     ...(s.qualityOverride ? { qualityId: s.qualityOverride.id } : {}),
+    ...(s.chordOverride ? { chordRoot: s.chordOverride.root, chordQualityId: s.chordOverride.quality.id } : {}),
+    ...(s.secondaryDominantOf != null ? { secondaryDominantOf: s.secondaryDominantOf } : {}),
   }))
 }
 
-function deserializeSteps(raw: unknown): ProgressionStep[] {
+export function deserializeSteps(raw: unknown): ProgressionStep[] {
   if (!Array.isArray(raw)) return []
   return (raw as StoredStep[])
     .filter(s => typeof s.degree === 'number' && s.degree >= 1)
-    .map(s => ({
-      degree: s.degree,
-      ...(s.qualityId && CHORD_QUALITIES_BY_ID[s.qualityId]
-        ? { qualityOverride: CHORD_QUALITIES_BY_ID[s.qualityId] }
-        : {}),
-    }))
+    .map(s => {
+      const step: ProgressionStep = { degree: s.degree }
+      if (s.qualityId && CHORD_QUALITIES_BY_ID[s.qualityId])
+        step.qualityOverride = CHORD_QUALITIES_BY_ID[s.qualityId]
+      if (s.chordQualityId && CHORD_QUALITIES_BY_ID[s.chordQualityId] && typeof s.chordRoot === 'number')
+        step.chordOverride = { root: s.chordRoot as PitchClass, quality: CHORD_QUALITIES_BY_ID[s.chordQualityId] }
+      if (s.secondaryDominantOf != null)
+        step.secondaryDominantOf = s.secondaryDominantOf
+      return step
+    })
 }
 
 const STORAGE_KEY = 'ftp.v1'
@@ -73,18 +86,21 @@ function save(s: { steps: ProgressionStep[]; activeStep: number | null; bpm: num
 // ── Store ───────────────────────────────────────────────────────────────────
 
 interface ProgressionState {
-  steps:      ProgressionStep[]
-  activeStep: number | null
+  steps:       ProgressionStep[]
+  activeStep:  number | null
   hoveredStep: number | null
-  playing:    boolean
-  bpm:        number
-  loop:       boolean
+  beatIndex:   number          // 0-3 quarter-note beat within the current chord
+  playing:     boolean
+  bpm:         number
+  loop:        boolean
 }
 
 interface ProgressionActions {
-  append:    (degree: number, qualityId?: string) => void
-  replaceAt: (index: number, degree: number, qualityId?: string) => void
-  removeAt:  (index: number)  => void
+  append:      (degree: number, qualityId?: string) => void
+  appendStep:  (step: ProgressionStep) => void
+  replaceAt:   (index: number, degree: number, qualityId?: string) => void
+  replaceAtStep: (index: number, step: ProgressionStep) => void
+  removeAt:    (index: number)  => void
   focusStep: (index: number | null) => void
   hoverStep: (index: number | null) => void
   stepBy:    (dir: 1 | -1)   => void
@@ -114,26 +130,35 @@ export const useProgressionStore = create<ProgressionState & ProgressionActions>
     const startTimer = () => {
       stopTimer()
       timer = setInterval(() => {
-        const { steps, activeStep, loop } = get()
+        const { steps, activeStep, beatIndex, loop } = get()
         if (!steps.length) { stopTimer(); set({ playing: false }); return }
+
+        const nextBeat = (beatIndex + 1) % 4
+        // Advance chord every 4 beats (one bar of 4/4)
+        if (nextBeat !== 0) {
+          set({ beatIndex: nextBeat })
+          return
+        }
+
         const cur  = activeStep ?? 0
         const next = cur + 1
         if (next >= steps.length) {
-          if (loop) set({ activeStep: 0 })
-          else { stopTimer(); set({ activeStep: steps.length - 1, playing: false }) }
+          if (loop) set({ activeStep: 0, beatIndex: 0 })
+          else { stopTimer(); set({ activeStep: steps.length - 1, beatIndex: 0, playing: false }) }
         } else {
-          set({ activeStep: next })
+          set({ activeStep: next, beatIndex: 0 })
         }
-      }, tickMs(get().bpm))
+      }, quarterMs(get().bpm))
     }
 
     return {
-      steps:      persisted.steps      ?? [],
-      activeStep: persisted.activeStep ?? null,
+      steps:       persisted.steps      ?? [],
+      activeStep:  persisted.activeStep ?? null,
       hoveredStep: null,
-      playing:    false,
-      bpm:        persisted.bpm        ?? 100,
-      loop:       persisted.loop       ?? true,
+      beatIndex:   0,
+      playing:     false,
+      bpm:         persisted.bpm        ?? 100,
+      loop:        persisted.loop       ?? true,
 
       append: (degree, qualityId) =>
         set(s => {
@@ -143,12 +168,23 @@ export const useProgressionStore = create<ProgressionState & ProgressionActions>
           return { steps: [...s.steps, step] }
         }),
 
+      appendStep: step =>
+        set(s => ({ steps: [...s.steps, step] })),
+
       replaceAt: (index, degree, qualityId) =>
         set(s => {
           if (index < 0 || index >= s.steps.length) return {}
           const step: ProgressionStep = qualityId && CHORD_QUALITIES_BY_ID[qualityId]
             ? { degree, qualityOverride: CHORD_QUALITIES_BY_ID[qualityId] }
             : { degree }
+          const steps = [...s.steps]
+          steps[index] = step
+          return { steps }
+        }),
+
+      replaceAtStep: (index, step) =>
+        set(s => {
+          if (index < 0 || index >= s.steps.length) return {}
           const steps = [...s.steps]
           steps[index] = step
           return { steps }
@@ -178,7 +214,7 @@ export const useProgressionStore = create<ProgressionState & ProgressionActions>
           return { activeStep: ((cur + dir) % n + n) % n }
         }),
 
-      clear: () => { stopTimer(); set({ steps: [], activeStep: null, hoveredStep: null, playing: false }) },
+      clear: () => { stopTimer(); set({ steps: [], activeStep: null, hoveredStep: null, beatIndex: 0, playing: false }) },
 
       loadPreset: preset => {
         const { scale } = useTheoryStore.getState()
@@ -191,20 +227,19 @@ export const useProgressionStore = create<ProgressionState & ProgressionActions>
         const s = get()
         if (!s.steps.length) return
         if (s.playing) {
-          stopTimer(); set({ playing: false })
+          stopTimer(); set({ playing: false, beatIndex: 0 })
         } else {
-          // If we stopped at the last step (non-looping end), restart from 0
           const atEnd = !s.loop && s.activeStep != null && s.activeStep >= s.steps.length - 1
-          set({ playing: true, activeStep: atEnd ? 0 : (s.activeStep ?? 0) })
+          set({ playing: true, beatIndex: 0, activeStep: atEnd ? 0 : (s.activeStep ?? 0) })
           startTimer()
         }
       },
 
-      restart: () => set(s => s.steps.length ? { activeStep: 0 } : {}),
+      restart: () => set(s => s.steps.length ? { activeStep: 0, beatIndex: 0 } : {}),
 
       setBpm: bpm => {
         const v = Math.max(40, Math.min(220, bpm))
-        set({ bpm: v })
+        set({ bpm: v, beatIndex: 0 })
         if (get().playing) startTimer()
       },
 

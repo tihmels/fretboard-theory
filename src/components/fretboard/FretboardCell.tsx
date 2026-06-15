@@ -21,6 +21,8 @@ interface Props {
   identify:      boolean
   isPinned:      boolean
   isFlash:       boolean
+  voicingColor:  string | null
+  voicingMode:   boolean
   onPointerDown: () => void
   onMouseEnter:  () => void
   onMouseLeave:  () => void
@@ -28,7 +30,7 @@ interface Props {
 
 export function FretboardCell({
   annotation, x, y, chordActive,
-  hoverPc, inWindow, identify, isPinned, isFlash,
+  hoverPc, inWindow, identify, isPinned, isFlash, voicingColor, voicingMode,
   onPointerDown, onMouseEnter, onMouseLeave,
 }: Props) {
   const root  = useTheoryStore(s => s.root)
@@ -51,7 +53,7 @@ export function FretboardCell({
         let opacity: number
         if (isPinned)       opacity = 1
         else if (!inWindow) opacity = 0.14
-        else if (dimmed)    opacity = 0.16
+        else if (dimmed)    opacity = voicingMode ? 0.07 : 0.16
         else                opacity = 1
 
         return (
@@ -76,6 +78,7 @@ export function FretboardCell({
         let opacity: number
         if (isPinned)       opacity = 1
         else if (!inWindow) opacity = 0.07
+        else if (voicingMode) opacity = 0.05
         else                opacity = identify ? 0.3 : 0.2
 
         return (
@@ -114,6 +117,15 @@ export function FretboardCell({
       )}
       {isFlash && (
         <circle cx={x} cy={y} r={L.dotRadius + 7} fill="none" stroke="#e0a85a" strokeWidth={3} />
+      )}
+      {voicingColor && (
+        <circle
+          cx={x} cy={y} r={L.dotRadius + 5}
+          fill="none"
+          stroke={voicingColor}
+          strokeWidth={2.5}
+          opacity={0.9}
+        />
       )}
 
       {/* Transparent hit target — always on top and pointer-sized */}

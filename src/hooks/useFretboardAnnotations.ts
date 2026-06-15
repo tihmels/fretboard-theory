@@ -3,13 +3,19 @@ import { useTheoryStore } from '../store/theory'
 import { useFretboardStore } from '../store/fretboard'
 import { useViewStore } from '../store/view'
 import { useProgressionStore } from '../store/progression'
+import { useInteractiveStore } from '../store/interactive'
 import { buildFretboardGrid } from '../theory/fretboard'
 import { annotateGrid } from '../theory/annotation'
 import { CHORD_QUALITIES_BY_ID } from '../theory/chords'
 import { resolveProgression } from '../theory/progression'
+import { getChordVoicings } from '../theory/chordVoicings'
 import type { Chord } from '../theory/types'
+import type { ChordVoicing } from '../theory/chordVoicings'
 
-export function useFretboardAnnotations() {
+export function useFretboardAnnotations(): {
+  annotations:  ReturnType<typeof annotateGrid>
+  voicings:     ChordVoicing[]
+} {
   const root           = useTheoryStore(s => s.root)
   const scale          = useTheoryStore(s => s.scale)
   const chordQualityId = useTheoryStore(s => s.chordQualityId)
@@ -19,10 +25,9 @@ export function useFretboardAnnotations() {
   const fretCount      = useFretboardStore(s => s.fretCount)
   const startFret      = useFretboardStore(s => s.startFret)
   const labelMode      = useViewStore(s => s.labelMode)
+  const voicingMode    = useInteractiveStore(s => s.voicingMode)
 
   return useMemo(() => {
-    // Progression hover takes precedence over quality selector.
-    // The playhead itself does not alter the fretboard unless the user hovers a step.
     let chord: Chord | null = null
     if (hoveredStep != null && progSteps.length > 0 && scale) {
       try {
@@ -35,14 +40,25 @@ export function useFretboardAnnotations() {
       if (quality) chord = { root, quality }
     }
 
+    // In voicing mode, default to major triad so roles (root/third/fifth) are
+    // always set — enabling proper dimming even with no explicit chord active.
+    const voicingChord: Chord = chord ?? { root, quality: CHORD_QUALITIES_BY_ID['maj'] }
+    const annotationChord     = voicingMode ? voicingChord : chord
+
     const grid = buildFretboardGrid(tuning, fretCount)
-    return annotateGrid(grid, {
+    const annotations = annotateGrid(grid, {
       root,
       scale,
-      chord,
+      chord: annotationChord,
       labelMode,
       spelling: 'auto',
       fretRange: { startFret, endFret: startFret + fretCount },
     })
-  }, [root, scale, chordQualityId, progSteps, hoveredStep, tuning, fretCount, startFret, labelMode])
+
+    const voicings: ChordVoicing[] = voicingMode
+      ? getChordVoicings(voicingChord, tuning)
+      : []
+
+    return { annotations, voicings }
+  }, [root, scale, chordQualityId, progSteps, hoveredStep, tuning, fretCount, startFret, labelMode, voicingMode])
 }

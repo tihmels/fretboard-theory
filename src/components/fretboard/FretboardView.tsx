@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useFretboardAnnotations } from '../../hooks/useFretboardAnnotations'
 import { useFretboardStore } from '../../store/fretboard'
 import { useTheoryStore } from '../../store/theory'
@@ -15,7 +15,7 @@ import type { PitchClass } from '../../theory/types'
 interface Ripple { id: number; x: number; y: number }
 
 export function FretboardView() {
-  const annotations    = useFretboardAnnotations()
+  const { annotations, voicings } = useFretboardAnnotations()
   const fretCount      = useFretboardStore(s => s.fretCount)
   const tuning         = useFretboardStore(s => s.tuning)
   const chordQualityId = useTheoryStore(s => s.chordQualityId)
@@ -23,12 +23,14 @@ export function FretboardView() {
   const scale          = useTheoryStore(s => s.scale)
   const hoveredStep    = useProgressionStore(s => s.hoveredStep)
   const progSteps      = useProgressionStore(s => s.steps)
-  const chordActive    = chordQualityId !== null || (hoveredStep !== null && progSteps.length > 0)
 
-  const hoverPc    = useInteractiveStore(s => s.hoverPc)
-  const posIdx     = useInteractiveStore(s => s.posIdx)
-  const identify   = useInteractiveStore(s => s.identify)
-  const pinned     = useInteractiveStore(s => s.pinned)
+  const hoverPc     = useInteractiveStore(s => s.hoverPc)
+  const posIdx      = useInteractiveStore(s => s.posIdx)
+  const identify    = useInteractiveStore(s => s.identify)
+  const voicingMode = useInteractiveStore(s => s.voicingMode)
+  const pinned      = useInteractiveStore(s => s.pinned)
+
+  const chordActive = voicingMode || chordQualityId !== null || (hoveredStep !== null && progSteps.length > 0)
   const setHoverPc = useInteractiveStore(s => s.setHoverPc)
   const togglePin  = useInteractiveStore(s => s.togglePin)
 
@@ -100,6 +102,17 @@ export function FretboardView() {
     }
     step()
   }
+
+  // Build cell → voicing-color lookup; first voicing to claim a cell wins.
+  const voicingCellColor = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const v of voicings) {
+      for (const key of v.cells) {
+        if (!map.has(key)) map.set(key, v.color)
+      }
+    }
+    return map
+  }, [voicings])
 
   const W    = svgWidth(fretCount)
   const H    = svgHeight()
@@ -203,6 +216,8 @@ export function FretboardView() {
                   identify={identify}
                   isPinned={pinned.some(p => p.string === si && p.fret === fret)}
                   isFlash={flashId === key}
+                  voicingColor={voicingCellColor.get(key) ?? null}
+                  voicingMode={voicingMode}
                   onPointerDown={() => handlePointerDown(si, fret, pc, midi, x, y)}
                   onMouseEnter={() => setHoverPc(pc)}
                   onMouseLeave={() => setHoverPc(null)}
