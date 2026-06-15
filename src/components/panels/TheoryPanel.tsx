@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { CircleOfFifths } from '../circle/CircleOfFifths'
 import { ScaleSelector } from '../theory/ScaleSelector'
 import { ChordQualitySelector } from '../theory/ChordQualitySelector'
+import { SavedSongsPanel } from '../theory/SavedSongsPanel'
 
 interface SectionProps {
   label:       string
@@ -89,6 +90,10 @@ export function TheoryPanel() {
 
       <CollapsibleSection label="Scale" flex>
         <ScaleSelector />
+      </CollapsibleSection>
+
+      <CollapsibleSection label="Songs" defaultOpen={false}>
+        <SavedSongsPanel />
       </CollapsibleSection>
     </aside>
   )
