@@ -31,10 +31,12 @@ interface Props {
 }
 
 export function FretboardToolbar({ onHearScale }: Props) {
-  const posIdx         = useInteractiveStore(s => s.posIdx)
-  const identify       = useInteractiveStore(s => s.identify)
-  const setPosIdx      = useInteractiveStore(s => s.setPosIdx)
-  const toggleIdentify = useInteractiveStore(s => s.toggleIdentify)
+  const posIdx             = useInteractiveStore(s => s.posIdx)
+  const identify           = useInteractiveStore(s => s.identify)
+  const voicingMode        = useInteractiveStore(s => s.voicingMode)
+  const setPosIdx          = useInteractiveStore(s => s.setPosIdx)
+  const toggleIdentify     = useInteractiveStore(s => s.toggleIdentify)
+  const toggleVoicingMode  = useInteractiveStore(s => s.toggleVoicingMode)
 
   const identifyBtnStyle: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: '7px',
@@ -78,10 +80,24 @@ export function FretboardToolbar({ onHearScale }: Props) {
         ▶  Hear scale
       </button>
 
+      <button
+        onClick={toggleVoicingMode}
+        style={{
+          ...HEAR_BTN,
+          border: `1px solid ${voicingMode ? 'rgba(56,196,214,.5)' : '#2a221b'}`,
+          background: voicingMode ? 'rgba(56,196,214,.12)' : '#1b150f',
+          color: voicingMode ? '#6cd8e8' : '#b3a89a',
+        }}
+      >
+        ◈  Chords
+      </button>
+
       <span style={{ marginLeft: 'auto', fontSize: '12px', color: '#6b6258', letterSpacing: '.01em' }}>
         {identify
           ? 'Identify mode · tap notes to name the interval or chord they form'
-          : 'Tap a fret to hear it · hover a note to light up its octaves'}
+          : voicingMode
+            ? 'Chords · each color is one voicing · hover a chord to focus'
+            : 'Tap a fret to hear it · hover a note to light up its octaves'}
       </span>
     </div>
   )

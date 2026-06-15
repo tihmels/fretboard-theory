@@ -18,30 +18,34 @@ export const POSITIONS = [
 ] as const
 
 interface InteractiveState {
-  hoverPc:  PitchClass | null
-  posIdx:   number | null
-  identify: boolean
-  pinned:   PinnedNote[]
+  hoverPc:      PitchClass | null
+  posIdx:       number | null
+  identify:     boolean
+  voicingMode:  boolean
+  pinned:       PinnedNote[]
 }
 
 interface InteractiveActions {
-  setHoverPc:     (pc: PitchClass | null) => void
-  setPosIdx:      (idx: number | null)    => void
-  toggleIdentify: () => void
-  togglePin:      (note: PinnedNote)      => void
-  clearPins:      () => void
+  setHoverPc:        (pc: PitchClass | null) => void
+  setPosIdx:         (idx: number | null)    => void
+  toggleIdentify:    ()                      => void
+  toggleVoicingMode: ()                      => void
+  togglePin:         (note: PinnedNote)      => void
+  clearPins:         ()                      => void
 }
 
 export const useInteractiveStore = create<InteractiveState & InteractiveActions>(set => ({
-  hoverPc:  null,
-  posIdx:   null,
-  identify: false,
-  pinned:   [],
+  hoverPc:     null,
+  posIdx:      null,
+  identify:    false,
+  voicingMode: false,
+  pinned:      [],
 
-  setHoverPc:     pc  => set({ hoverPc: pc }),
-  setPosIdx:      idx => set({ posIdx: idx }),
-  toggleIdentify: ()  => set(s => ({ identify: !s.identify, pinned: [] })),
-  clearPins:      ()  => set({ pinned: [] }),
+  setHoverPc:        pc  => set({ hoverPc: pc }),
+  setPosIdx:         idx => set({ posIdx: idx }),
+  toggleIdentify:    ()  => set(s => ({ identify: !s.identify, pinned: [] })),
+  toggleVoicingMode: ()  => set(s => ({ voicingMode: !s.voicingMode })),
+  clearPins:         ()  => set({ pinned: [] }),
 
   togglePin: note => set(s => {
     const exists = s.pinned.some(p => p.string === note.string && p.fret === note.fret)
